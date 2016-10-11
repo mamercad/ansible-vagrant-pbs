@@ -1,0 +1,8 @@
+#!/usr/bin/env ansible-playbook -i inventory
+---
+
+- hosts: vagrant
+  become: yes
+  roles:
+    - ping
+    - pbs

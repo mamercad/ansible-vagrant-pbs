@@ -1,0 +1,92 @@
+---
+
+- name: install development tools
+  yum:
+    name: "@Development Tools"
+    state: present
+
+- name: clone https://github.com/PBSPro/pbspro.git
+  git:
+    repo: https://github.com/PBSPro/pbspro.git
+    dest: /usr/local/src/pbspro
+    update: no
+
+- name: install prereqs
+  yum:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - gcc
+    - make
+    - rpm-build
+    - libtool
+    - hwloc-devel
+    - libX11-devel
+    - libXt-devel
+    - libedit-devel
+    - libical-devel
+    - ncurses-devel
+    - perl
+    - postgresql-devel
+    - python-devel
+    - tcl-devel
+    - tk-devel
+    - swig
+    - expat-devel
+    - openssl-devel
+    - libXext
+    - libXft
+    - autoconf
+    - automake
+    - expat
+    - libedit
+    - postgresql-server
+    - python
+    - sendmail
+    - sudo
+    - tcl
+    - tk
+    - libical
+
+- name: run autogen.sh
+  shell: ./autogen.sh
+  args:
+    chdir: /usr/local/src/pbspro
+    creates: /usr/local/src/pbspro/src/Makefile.in
+
+- name: run ./configure --prefix=/opt/pbs
+  shell: ./configure --prefix=/opt/pbs
+  args:
+    chdir: /usr/local/src/pbspro
+    creates: /usr/local/src/pbspro/config.log
+
+- name: run make
+  shell: make
+  args:
+    chdir: /usr/local/src/pbspro
+    creates: /usr/local/src/pbspro/src/cmds/qsub
+
+- name: run make install
+  shell: make install
+  args:
+    chdir: /usr/local/src/pbspro
+    creates: /opt/pbs/bin/qsub
+
+- name: create /usr/pbs # need to investigate what below is doing
+  file:
+    path: /usr/pbs
+    src: /opt/pbs
+    state: link
+
+- name: run /opt/pbs/libexec/pbs_postinstall # see above
+  shell: /opt/pbs/libexec/pbs_postinstall
+  args:
+    creates: /usr/pbs/bin/qsub
+
+- name: add setuid to pbs_iff and pbs_rcp
+  file:
+    path: "{{ item }}"
+    mode: 004755
+  with_items:
+    - /opt/pbs/sbin/pbs_iff
+    - /opt/pbs/sbin/pbs_rcp
